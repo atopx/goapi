@@ -1,4 +1,4 @@
-# api-template
+# goapi
 
 This is a template for creating a REST API using Golang, Gin, Gorm, and Swagger.
 
@@ -16,12 +16,13 @@ This is a template for creating a REST API using Golang, Gin, Gorm, and Swagger.
 1. Clone the repository:
 
   ```bash
-  git clone https://github.com/atopx/api-template.git
+  git clone https://github.com/atopx/goapi.git
   ```
 
 2. Install the dependencies:
 
   ```bash
+  cd goapi
   go mod tidy
   ```
 
@@ -40,7 +41,7 @@ This is a template for creating a REST API using Golang, Gin, Gorm, and Swagger.
 ## Codes Layout
 
 ```
-.
+goapi
 ├── cmd
 │   └── app  // main entry
 │       └── main.go
