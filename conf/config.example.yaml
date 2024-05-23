@@ -1,0 +1,52 @@
+server:
+  addr: 127.0.0.1:8080
+  # 单位: 秒
+  read_timeout: 60
+  # 单位: 秒
+  write_timeout: 60
+  # 单位: 字节
+  max_header_bytes: 1048576
+
+logger:
+  # debug/info/warn/error/fatal
+  level: debug
+  filepath: logs/runtime.log
+  # 单位: 天
+  maxage: 1
+  # 单位: MB
+  maxsize: 100
+  # 每一个请求都会生成一个有序的唯一id，返回给前端
+  trace: traceId
+  # 最大保留日志文件数
+  backups: 7
+
+database:
+  # mysql/pgsql/sqlite
+  type: mysql
+  host: 127.0.0.1
+  port: 3306
+  name: blog
+  user: root
+  password: root
+  max_idle_conn: 10
+  max_open_conn: 100
+  # 单位: 秒
+  max_idle_time: 3600
+  max_life_time: 3600
+
+redis:
+  host: 127.0.0.1
+  port: 6379
+  password: rpass
+
+
+workers:
+  health:
+    spec: '@every 5s'
+    enable: true
+  test:
+    spec: '@every 5s'
+    enable: false
+  ase:
+    spec: '@every 5s'
+    enable: true

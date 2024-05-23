@@ -1,0 +1,39 @@
+#!/bin/bash
+
+NAME="goapi"
+VERSION="v0.0.1"
+
+function build() {
+	go build -tags=jsoniter -ldflags "-w -s" -o ${NAME}_${VERSION}
+    echo -e "\033[32m build app to ${NAME}_${VERSION} \033[0m"
+}
+
+function docker() {
+    docker build -t ${NAME}:${VERSION} .
+    echo -e "\033[32m build docker image ${NAME}:${VERSION} \033[0m"
+}
+
+function docs() {
+    swag init --output docs --outputTypes yaml --parseInternal
+    rm -f docs/docs.go
+    echo -e "\033[32m generate openapi to docs/swagger.yaml \033[0m"
+}
+
+function clean() {
+    rm -f ${NAME}_*
+    rm -f docs/swagger.yaml docs/docs.go
+    echo -e "\033[32m delete ${NAME}_* and docs/swagger.yaml \033[0m"
+}
+
+case $1 in
+    build)
+        build;;
+    docker)
+        docker;;
+    docs)
+        docs;;
+    clean)
+        clean;;
+    *)
+        echo -e "\033[34m Usage: $0 { build | docker | docs | clean } \033[0m"
+esac
