@@ -1,14 +1,17 @@
 # goapi
 
-This is a template for creating a REST API using Golang, Gin, Gorm, and Swagger.
+> go1.22+
+
+This is a template for creating a REST API using Golang, Gin, Gorm, Zap, and Swagger.
 
 
 ## Features
 
 - Support databases: MySQL, PostgreSQL, and SQLite databases
+- Support docker
 - Performance optimization
 - Redoc and openapi documentation
-- Full chain trace of logs
+- Full chain trace of logs (use uber-zap)
 - Lightweight and fast
 - Licensed under the MIT License
 
@@ -35,59 +38,62 @@ This is a template for creating a REST API using Golang, Gin, Gorm, and Swagger.
 4. Run the application:
 
   ```bash
-  go run cmd/app/main.go
+  go run main.go
+  ```
+
+5. Control script
+
+  ```bash
+  ./control { build | docker | docs | clean }
   ```
 
 ## Codes Layout
 
-```
+```bash
 goapi
-├── cmd
-│   └── app  // main entry
-│       └── main.go
-├── common // common package
-│   ├── handle // global handlers
+├── common # common package
+│   ├── handle # global handlers
 │   │   └── db.go
-│   ├── logger // global logger
+│   ├── logger # global logger
 │   │   ├── gorm.go
 │   │   └── logger.go
-│   ├── middleware // router middleware
+│   ├── middleware # router middleware
 │   │   ├── context.go
 │   │   └── recover.go
-│   ├── system // api response
+│   ├── system # api response
 │   │   ├── consts.go
 │   │   └── response.go
-│   └── utils // frequently used functions
+│   └── utils # frequently used functions
 │       ├── sql.go
 │       └── trace.go
-├── conf // configuration file
+├── conf # configuration file
 │   ├── config.example.yaml
 │   ├── config.go
 │   └── config.yaml
-├── docs // redoc and openapi documentation
-├── internal // internal logic
-│   ├── api // define api
+├── docs # redoc and openapi documentation
+├── internal # internal logic
+│   ├── api # define api
 │   │   ├── server.go
 │   │   └── user.go
-│   ├── biz // business logic
+│   ├── biz # business logic
 │   │   └── user
 │   │       └── list
 │   │           ├── action.go
 │   │           └── schema.go
-│   ├── control // api controller interface
+│   ├── control # api controller interface
 │   │   └── control.go
-│   ├── model // db model
+│   ├── model # db model
 │   │   └── user.go
-│   ├── server // api server
+│   ├── server # api server
 │   │   ├── router.go
 │   │   └── server.go
-│   └── worker // async workers
+│   └── worker # async workers
 │       ├── health
 │       │   └── task.go
 │       └── worker.go
-├── pkg // third-party packages
+├── pkg # third-party packages
 │   ├── db.go
 │   └── redis.go
-└── test // tests
+└── tests # tests
     └── config_test.go
 ```
