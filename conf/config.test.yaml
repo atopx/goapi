@@ -1,5 +1,8 @@
+app_name: goapi
+app_version: v0.1.0
+
 server:
-  addr: 127.0.0.1:60001
+  server_addr: 127.0.0.1:60001
   # 单位: 秒
   read_timeout: 60
   # 单位: 秒

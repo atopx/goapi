@@ -20,12 +20,14 @@ import (
 )
 
 func main() {
+
 	err := conf.Load()
 	if err != nil {
 		panic(fmt.Errorf("load config error: %s", err.Error()))
 	}
 
 	cfg := conf.Get()
+	log.Printf("start app %s, current version is %s", cfg.AppName, cfg.AppVersion)
 
 	if err = logger.Setup(cfg.Logger); err != nil {
 		panic(fmt.Errorf("setup logger error: %s", err.Error()))

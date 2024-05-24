@@ -5,11 +5,13 @@ import (
 )
 
 type Config struct {
-	Server   *ServerConfig            `yaml:"server"`
-	Logger   *LoggerConfig            `yaml:"logger"`
-	Database *DatabaseConfig          `yaml:"database"`
-	Redis    *RedisConfig             `yaml:"redis"`
-	Workers  map[string]*WorkerConfig `yaml:"workers"`
+	AppName    string                   `yaml:"app_name"`
+	AppVersion string                   `yaml:"app_version"`
+	Server     *ServerConfig            `yaml:"server"`
+	Logger     *LoggerConfig            `yaml:"logger"`
+	Database   *DatabaseConfig          `yaml:"database"`
+	Redis      *RedisConfig             `yaml:"redis"`
+	Workers    map[string]*WorkerConfig `yaml:"workers"`
 }
 
 type ServerConfig struct {

@@ -1,11 +1,14 @@
 #!/bin/bash
 
-NAME="goapi"
-VERSION="v0.0.1"
+NAME=`grep 'app_name' conf/config.yaml | awk '{print $2}'`
+VERSION=`grep 'app_version' conf/config.yaml | awk '{print $2}'`
 
-function new() {
-    echo $1
-    echo $2
+function init() {
+    NEW_NAME=$1
+    sed -i "s/module $NAME/module $1/g" go.mod
+    find . -type f -name '*.go' | xargs sed -i "s/$NAME\//$NEW_NAME\//g"
+    find . -type f -name 'config*yaml' | xargs sed -i "s/$NAME/$NEW_NAME/g"
+    echo -e "done. change module to \033[32m${NEW_NAME}\033[0m"
 }
 
 function build() {
@@ -31,6 +34,13 @@ function clean() {
 }
 
 case $1 in
+    init)
+    if [[ -z "$2" ]]; then
+        echo -e "missing new name, example: $0 init NEW_NAME"
+    else
+        init $2
+    fi;;
+        
     build)
         build;;
     docker)
@@ -40,5 +50,6 @@ case $1 in
     clean)
         clean;;
     *)
-        echo -e "\033[34m Usage: $0 { build | docker | docs | clean } \033[0m"
+        echo -e $N $V
+        echo -e "\033[34m Usage: $0 { init \$NEW_NAME | build | docker | docs | clean } \033[0m"
 esac

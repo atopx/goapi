@@ -22,5 +22,6 @@ go.work
 
 logs/*
 
+*_v?.?.?
+
 conf/config.yaml
-goapi*

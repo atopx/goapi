@@ -22,11 +22,11 @@ This is a template for creating a REST API using Golang, Gin, Gorm, Zap, and Swa
   git clone https://github.com/atopx/goapi.git
   ```
 
-2. Install the dependencies:
-
+2. Init your app
+  
   ```bash
   cd goapi
-  go mod tidy
+  ./control init $NEW_NAME # example: ./control init newapp
   ```
 
 3. Change the configuration file:
@@ -38,13 +38,14 @@ This is a template for creating a REST API using Golang, Gin, Gorm, Zap, and Swa
 4. Run the application:
 
   ```bash
+  go mod tidy
   go run main.go
   ```
 
 5. Control script
 
   ```bash
-  ./control { build | docker | docs | clean }
+  ./control { init $NEW_NAME | build | docker | docs | clean }
   ```
 
 ## Codes Layout
