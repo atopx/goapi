@@ -3,6 +3,10 @@
 NAME="goapi"
 VERSION="v0.0.1"
 
+function new() {
+    echo $1
+}
+
 function build() {
 	go build -tags=jsoniter -ldflags "-w -s" -o ${NAME}_${VERSION}
     echo -e "\033[32m build app to ${NAME}_${VERSION} \033[0m"
