@@ -1,0 +1,210 @@
+definitions:
+  conf.Config:
+    properties:
+      appName:
+        type: string
+      appVersion:
+        type: string
+      database:
+        $ref: '#/definitions/conf.DatabaseConfig'
+      logger:
+        $ref: '#/definitions/conf.LoggerConfig'
+      redis:
+        $ref: '#/definitions/conf.RedisConfig'
+      server:
+        $ref: '#/definitions/conf.ServerConfig'
+      workers:
+        additionalProperties:
+          $ref: '#/definitions/conf.WorkerConfig'
+        type: object
+    type: object
+  conf.DatabaseConfig:
+    properties:
+      host:
+        type: string
+      maxIdleConn:
+        type: integer
+      maxIdleTime:
+        type: integer
+      maxLifeTime:
+        type: integer
+      maxOpenConn:
+        type: integer
+      name:
+        type: string
+      password:
+        type: string
+      port:
+        type: integer
+      type:
+        type: string
+      user:
+        type: string
+    type: object
+  conf.LoggerConfig:
+    properties:
+      backups:
+        type: integer
+      filepath:
+        type: string
+      level:
+        type: string
+      maxage:
+        type: integer
+      maxsize:
+        type: integer
+      trace:
+        type: string
+    type: object
+  conf.RedisConfig:
+    properties:
+      db:
+        type: integer
+      host:
+        type: string
+      maxLifeTime:
+        type: integer
+      password:
+        type: string
+      poolSize:
+        type: integer
+      port:
+        type: integer
+    type: object
+  conf.ServerConfig:
+    properties:
+      addr:
+        type: string
+      maxHeaderBytes:
+        type: integer
+      readTimeout:
+        type: integer
+      writeTimeout:
+        type: integer
+    type: object
+  conf.WorkerConfig:
+    properties:
+      enable:
+        type: boolean
+      spec:
+        type: string
+    type: object
+  system.Response:
+    properties:
+      code:
+        type: integer
+      data: {}
+      message:
+        type: string
+      traceId:
+        type: string
+    type: object
+  user_list.Params:
+    properties:
+      ageRange:
+        $ref: '#/definitions/utils.Range'
+      createTimeRange:
+        $ref: '#/definitions/utils.Range'
+      keyword:
+        type: string
+      page:
+        $ref: '#/definitions/utils.Pagination'
+    type: object
+  user_list.Record:
+    properties:
+      age:
+        type: integer
+      createTime:
+        type: string
+      id:
+        type: integer
+      nickname:
+        type: string
+      updateTime:
+        type: string
+      username:
+        type: string
+    type: object
+  user_list.Reply:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/user_list.Record'
+        type: array
+      filtered:
+        type: integer
+      page:
+        $ref: '#/definitions/utils.Pagination'
+      total:
+        type: integer
+    type: object
+  utils.Pagination:
+    properties:
+      page:
+        type: integer
+      size:
+        type: integer
+    type: object
+  utils.Range:
+    properties:
+      left:
+        type: integer
+      right:
+        type: integer
+    type: object
+info:
+  contact: {}
+paths:
+  /api/v1/user/list:
+    post:
+      consumes:
+      - application/json
+      description: 用户列表
+      parameters:
+      - description: 用户列表参数
+        in: body
+        name: param
+        required: true
+        schema:
+          $ref: '#/definitions/user_list.Params'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 调用成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/system.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/user_list.Reply'
+              type: object
+      summary: 用户列表
+      tags:
+      - 用户
+  /server/config:
+    get:
+      responses:
+        "200":
+          description: 调用成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/system.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/conf.Config'
+              type: object
+      summary: 服务配置
+      tags:
+      - 系统
+  /server/health:
+    get:
+      responses:
+        "200":
+          description: 调用成功
+          schema:
+            $ref: '#/definitions/system.Response'
+      summary: 服务检测
+      tags:
+      - 系统
+swagger: "2.0"
