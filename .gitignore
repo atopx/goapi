@@ -24,4 +24,6 @@ logs/*
 
 *_v?.?.?
 
-conf/config.yaml
+conf/config.toml
+config.toml
+
