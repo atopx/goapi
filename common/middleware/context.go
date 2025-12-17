@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"goapi/common/system"
-	"goapi/common/utils"
+	"goapi/common/trace"
 	"time"
 
 	"goapi/common/logger"
@@ -18,12 +18,13 @@ func ContextMiddleware() gin.HandlerFunc {
 		resp := system.NewResponse(ctx)
 
 		// 如果请求头里携带了traceId, 则不再重新生成
-		traceId := ctx.Request.Header.Get("traceId")
+		traceId := ctx.Request.Header.Get("trace_id")
 		if traceId == general.Empty {
-			traceId = utils.NewTraceId()
+			traceId = trace.NewTraceID()
 		}
 		resp.TraceId = traceId
-		ctx.Set(logger.TraceKey(), resp.TraceId)
+		// 将 trace 写入上下文供日志获取
+		ctx.Set(string(trace.ContextTrace), resp.TraceId)
 
 		// request log
 		logger.Info(ctx, "request",

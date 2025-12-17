@@ -2,9 +2,9 @@ package user_list
 
 import (
 	"fmt"
-	"goapi/common/handle"
 	"goapi/common/logger"
 	"goapi/common/utils"
+	"goapi/internal/app"
 	"goapi/internal/model"
 	"time"
 
@@ -14,7 +14,7 @@ import (
 func (c *Controller) Deal() (any, error) {
 	params := c.Params.(*Params)
 
-	tx := handle.DB(c.Context()).Model(&model.User{})
+	tx := app.Infra().DB(c.Context()).Model(&model.User{})
 
 	var reply Reply
 

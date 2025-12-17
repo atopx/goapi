@@ -2,7 +2,7 @@ package api
 
 import (
 	"goapi/common/system"
-	"goapi/conf"
+	"goapi/internal/app"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -25,6 +25,6 @@ func ServerHealth(ctx *gin.Context) {
 // @Router /server/config [get]
 func ServerConfig(ctx *gin.Context) {
 	resp := system.GetResponse(ctx)
-	resp.Data = conf.Get()
+	resp.Data = app.Infra().Config
 	ctx.JSON(http.StatusOK, resp)
 }

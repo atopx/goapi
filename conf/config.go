@@ -5,72 +5,72 @@ import (
 )
 
 type Config struct {
-	AppName    string                   `yaml:"app_name"`
-	AppVersion string                   `yaml:"app_version"`
-	Server     *ServerConfig            `yaml:"server"`
-	Logger     *LoggerConfig            `yaml:"logger"`
-	Database   *DatabaseConfig          `yaml:"database"`
-	Redis      *RedisConfig             `yaml:"redis"`
-	Workers    map[string]*WorkerConfig `yaml:"workers"`
+	AppName    string          `mapstruct:"app_name"`
+	AppVersion string          `mapstruct:"app_version"`
+	Server     *ServerConfig   `mapstruct:"server"`
+	Logger     *LoggerConfig   `mapstruct:"logger"`
+	Database   *DatabaseConfig `mapstruct:"database"`
+	Redis      *RedisConfig    `mapstruct:"redis"`
+	Scheduler  []WorkerConfig  `mapstruct:"scheduler"`
 }
 
 type ServerConfig struct {
-	Addr           string `yaml:"addr"`
-	ReadTimeout    int64  `yaml:"read_timeout"`
-	WriteTimeout   int64  `yaml:"write_timeout"`
-	MaxHeaderBytes int    `yaml:"max_header_bytes"`
+	Addr           string `mapstruct:"addr"`
+	ReadTimeout    int64  `mapstruct:"read_timeout"`
+	WriteTimeout   int64  `mapstruct:"write_timeout"`
+	MaxHeaderBytes int    `mapstruct:"max_header_bytes"`
 }
 
 type LoggerConfig struct {
-	Level    string `yaml:"level"`
-	Filepath string `yaml:"filepath"`
-	Maxage   int    `yaml:"maxage"`
-	Maxsize  int    `yaml:"maxsize"`
-	Backups  int    `yaml:"backups"`
-	Trace    string `yaml:"trace"`
+	Level    string `mapstruct:"level"`
+	Filepath string `mapstruct:"filepath"`
+	Maxage   int    `mapstruct:"maxage"`
+	Maxsize  int    `mapstruct:"maxsize"`
+	Backups  int    `mapstruct:"backups"`
 }
 
 type WorkerConfig struct {
-	Spec   string `yaml:"spec"`
-	Enable bool   `yaml:"enable"`
+	Name    string         `mapstruct:"name"`
+	Spec    string         `mapstruct:"spec"`
+	Disable bool           `mapstruct:"disable"`
+	Args    map[string]any `mapstruct:"args,omitempty"`
 }
 
 type DatabaseConfig struct {
-	Type        string `yaml:"type"`
-	Host        string `yaml:"host"`
-	Port        int    `yaml:"port"`
-	Name        string `yaml:"name"`
-	User        string `yaml:"user"`
-	Password    string `yaml:"password"`
-	MaxIdleConn int    `yaml:"max_idle_conn"`
-	MaxOpenConn int    `yaml:"max_open_conn"`
-	MaxIdleTime int64  `yaml:"max_idle_time"`
-	MaxLifeTime int64  `yaml:"max_life_time"`
+	Type        string `mapstruct:"type"`
+	Host        string `mapstruct:"host"`
+	Port        int    `mapstruct:"port"`
+	Name        string `mapstruct:"name"`
+	User        string `mapstruct:"user"`
+	Password    string `mapstruct:"password"`
+	MaxIdleConn int    `mapstruct:"max_idle_conn"`
+	MaxOpenConn int    `mapstruct:"max_open_conn"`
+	MaxIdleTime int64  `mapstruct:"max_idle_time"`
+	MaxLifeTime int64  `mapstruct:"max_life_time"`
+	AutoMigrate bool   `mapstruct:"auto_migrate"`
 }
 
 type RedisConfig struct {
-	Host        string `yaml:"host"`
-	Port        int    `yaml:"port"`
-	Password    string `yaml:"password"`
-	DB          int    `yaml:"db"`
-	PoolSize    int    `yaml:"pool_size"`
-	MaxLifeTime int64  `yaml:"max_life_time"`
+	Host        string `mapstruct:"host"`
+	Port        int    `mapstruct:"port"`
+	Password    string `mapstruct:"password"`
+	DB          int    `mapstruct:"db"`
+	PoolSize    int    `mapstruct:"pool_size"`
+	MaxLifeTime int64  `mapstruct:"max_life_time"`
 }
 
-var config *Config
-
-func Load() error {
+func Load() (*Config, error) {
 	viper.AddConfigPath(".")
 	viper.AddConfigPath("./conf")
 	viper.AddConfigPath("./config")
+	viper.SetConfigType("toml")
 	err := viper.ReadInConfig()
 	if err != nil {
-		return err
+		return nil, err
 	}
-	config = new(Config)
-	return viper.Unmarshal(&config)
-}
-
-func Get() *Config {
-	return config
+	cfg := new(Config)
+	if err := viper.Unmarshal(&cfg); err != nil {
+		return nil, err
+	}
+	return cfg, nil
 }

@@ -32,7 +32,7 @@ This is a template for creating a REST API using Golang, Gin, Gorm, Zap, and Swa
 3. Change the configuration file:
 
   ```bash
-  cp conf/config.example.yaml conf/config.yaml
+  cp conf/config.example.toml config.toml
   ```
 
 4. Run the application:

@@ -1,15 +1,12 @@
 package main
 
 import (
+	"context"
 	_ "embed"
-	"fmt"
-	"goapi/common/handle"
 	"goapi/common/logger"
-	"goapi/conf"
-	"goapi/internal/model"
+	"goapi/internal/app"
+	"goapi/internal/scheduler"
 	"goapi/internal/server"
-	"goapi/internal/worker"
-	"goapi/pkg"
 	"log"
 	"os"
 	"os/signal"
@@ -21,17 +18,9 @@ import (
 
 func main() {
 
-	err := conf.Load()
-	if err != nil {
-		panic(fmt.Errorf("load config error: %s", err.Error()))
-	}
-
-	cfg := conf.Get()
+	app.Initialize(context.Background())
+	cfg := app.Infra().Config()
 	log.Printf("start app %s, current version is %s", cfg.AppName, cfg.AppVersion)
-
-	if err = logger.Setup(cfg.Logger); err != nil {
-		panic(fmt.Errorf("setup logger error: %s", err.Error()))
-	}
 
 	if logger.Logger().Level() == zapcore.DebugLevel {
 		// todo redoc openapi
@@ -39,18 +28,10 @@ func main() {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
-	handle.Db, err = pkg.NewDBClient(cfg.Database, logger.DbLogger())
-	if err != nil {
-		panic(fmt.Errorf("setup db error: %s", err.Error()))
-	}
-
-	handle.Db.AutoMigrate(&model.User{})
-
-	handle.Redis = pkg.NewRedisClient(cfg.Redis)
-
 	errors := make(chan error, 1)
 
-	worker.Start(cfg.Workers, errors)
+	s := scheduler.New(context.Background(), cfg.Scheduler)
+	s.Start()
 	server.Start(cfg.Server, errors)
 
 	runloop(errors)
@@ -69,4 +50,5 @@ func runloop(errors <-chan error) {
 			break
 		}
 	}
+	app.Close(context.Background())
 }

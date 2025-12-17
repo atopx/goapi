@@ -1,0 +1,41 @@
+app_name = "goapi"
+app_version = "v0.1.0"
+
+[server]
+addr = "127.0.0.1:8080"
+read_timeout = 60
+write_timeout = 60
+max_header_bytes = 1048576
+
+[logger]
+level = "debug"
+filepath = "logs/runtime.log"
+maxage = 1
+maxsize = 100
+backups = 7
+
+[database]
+type = "mysql"
+host = "127.0.0.1"
+port = 3306
+name = "blog"
+user = "root"
+password = "root"
+max_idle_conn = 10
+max_open_conn = 100
+max_idle_time = 3600
+max_life_time = 3600
+auto_migrate = true
+
+[redis]
+host = "127.0.0.1"
+port = 6379
+password = "rpass"
+db = 0
+pool_size = 10
+max_life_time = 3600
+
+[[scheduler]]
+name = "health"
+spec = "@every 5s"
+disable = false

@@ -3,6 +3,7 @@ package logger
 import (
 	"context"
 	"goapi/conf"
+	"goapi/common/trace"
 	"io"
 
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -16,19 +17,12 @@ var handler *handle
 
 type handle struct {
 	logger   *zap.Logger
-	traceKey string
-}
-
-func TraceKey() string {
-	return handler.traceKey
 }
 
 func (h *handle) trace(ctx context.Context) *zapcore.Field {
-	if value := ctx.Value(h.traceKey); value != nil {
-		if traceId, ok := value.(string); ok {
-			field := zap.String(h.traceKey, traceId)
-			return &field
-		}
+	if traceId, ok := trace.GetTraceID(ctx); ok {
+		field := zap.String(string(trace.ContextTrace), traceId)
+		return &field
 	}
 	return nil
 }
@@ -72,7 +66,6 @@ func Setup(cfg *conf.LoggerConfig) error {
 		EncodeCaller:   zapcore.FullCallerEncoder,
 	}), zapcore.AddSync(writer(cfg)), loggerLevel)
 	handler = &handle{
-		traceKey: cfg.Trace,
 		logger:   zap.New(core, zap.AddCaller(), zap.AddCallerSkip(2)),
 	}
 	return nil
