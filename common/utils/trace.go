@@ -1,20 +1,14 @@
 package utils
 
 import (
-	crand "crypto/rand"
-	"encoding/binary"
+	"crypto/rand"
 	"encoding/hex"
-	"math/rand"
-	"sync"
 )
 
+// NewTraceId 生成 16 字节随机十六进制 trace id。
+// 直接用 crypto/rand，避免 math/rand 的可预测性与多余的同步开销。
 func NewTraceId() string {
-	var seed int64
-	var s sync.Mutex
-	s.Lock()
-	defer s.Unlock()
-	_ = binary.Read(crand.Reader, binary.LittleEndian, &seed)
-	tid := [16]byte{}
-	rand.New(rand.NewSource(seed)).Read(tid[:])
-	return hex.EncodeToString(tid[:])
+	var buf [16]byte
+	_, _ = rand.Read(buf[:])
+	return hex.EncodeToString(buf[:])
 }

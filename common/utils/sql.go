@@ -17,10 +17,10 @@ func (r *Range) IsValid() bool {
 
 func (r *Range) Between(field string) func(tx *gorm.DB) *gorm.DB {
 	return func(tx *gorm.DB) *gorm.DB {
-		var sql strings.Builder
-		sql.WriteString(field)
-		sql.WriteString(" between ? and ?")
-		return tx.Where(sql, r.Start, r.End)
+		var sb strings.Builder
+		sb.WriteString(field)
+		sb.WriteString(" between ? and ?")
+		return tx.Where(sb.String(), r.Start, r.End)
 	}
 }
 
@@ -29,15 +29,26 @@ type Pagination struct {
 	Size int `json:"size"`
 }
 
-func (p *Pagination) RecordsCap(num int64) int {
-	cap := p.Page*p.Size - int(num)
-	if cap < 0 {
+// RecordsCap 计算当前页面预期返回的记录数（用于预分配切片容量）。
+// total 是过滤后的总数，已知页码和页大小后，当前页最多承载 min(size, total - (page-1)*size) 条。
+func (p *Pagination) RecordsCap(total int64) int {
+	page := p.Page
+	if page <= 0 {
+		page = 1
+	}
+	size := p.Size
+	if size <= 0 {
+		size = 10
+	}
+	offset := int64(page-1) * int64(size)
+	remaining := total - offset
+	if remaining <= 0 {
 		return 0
 	}
-	if cap > p.Size {
-		cap = p.Size
+	if remaining > int64(size) {
+		return size
 	}
-	return cap
+	return int(remaining)
 }
 
 func (p *Pagination) Paging(db *gorm.DB) *gorm.DB {
@@ -51,9 +62,9 @@ func (p *Pagination) Paging(db *gorm.DB) *gorm.DB {
 }
 
 func Like(key string) string {
-	var builder strings.Builder
-	builder.WriteByte('%')
-	builder.WriteString(key)
-	builder.WriteByte('%')
-	return builder.String()
+	var sb strings.Builder
+	sb.WriteByte('%')
+	sb.WriteString(key)
+	sb.WriteByte('%')
+	return sb.String()
 }

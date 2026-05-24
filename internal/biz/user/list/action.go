@@ -2,13 +2,13 @@ package user_list
 
 import (
 	"fmt"
+	"log/slog"
+	"time"
+
 	"goapi/common/handle"
 	"goapi/common/logger"
 	"goapi/common/utils"
 	"goapi/internal/model"
-	"time"
-
-	"github.com/atopx/clever/general"
 )
 
 func (c *Controller) Deal() (any, error) {
@@ -19,46 +19,45 @@ func (c *Controller) Deal() (any, error) {
 	var reply Reply
 
 	if err := tx.Count(&reply.Total).Error; err != nil {
-		return nil, fmt.Errorf("user_list total count error: %s", err)
+		return nil, fmt.Errorf("user_list total count: %w", err)
 	}
 
-	if params.Keyword != general.Empty {
+	if params.Keyword != "" {
 		key := utils.Like(params.Keyword)
-		tx.Where("username like ? or nickname like ?", key, key)
+		tx = tx.Where("username like ? or nickname like ?", key, key)
 	}
 
 	if params.AgeRange.IsValid() {
-		tx.Scopes(params.AgeRange.Between("age"))
+		tx = tx.Scopes(params.AgeRange.Between("age"))
 	}
 
 	if params.CreateTimeRange.IsValid() {
-		tx.Scopes(params.AgeRange.Between("create_at"))
+		tx = tx.Scopes(params.CreateTimeRange.Between("created_at"))
 	}
 
 	if err := tx.Count(&reply.Filtered).Error; err != nil {
-		return nil, fmt.Errorf("user_list filtered count error: %s", err)
+		return nil, fmt.Errorf("user_list filtered count: %w", err)
 	}
 
-	users := make([]*model.User, 0, params.Page.RecordsCap(reply.Total))
+	users := make([]*model.User, 0, params.Page.RecordsCap(reply.Filtered))
 
 	if err := tx.Scopes(params.Page.Paging).Find(&users).Error; err != nil {
-		return nil, fmt.Errorf("user_list find error: %s", err)
+		return nil, fmt.Errorf("user_list find: %w", err)
 	}
 
 	reply.Page = params.Page
 	reply.Records = make([]*Record, 0, len(users))
 
 	for _, user := range users {
-		record := &Record{
+		reply.Records = append(reply.Records, &Record{
 			Id:         user.ID,
 			Username:   user.Username,
 			Nickname:   user.Nickname,
 			Age:        user.Age,
-			UpdateTime: user.CreatedAt.Format(time.DateTime),
-			CreateTime: user.UpdatedAt.Format(time.DateTime),
-		}
-		reply.Records = append(reply.Records, record)
+			CreateTime: user.CreatedAt.Format(time.DateTime),
+			UpdateTime: user.UpdatedAt.Format(time.DateTime),
+		})
 	}
-	logger.Info(c.Context(), "success")
+	logger.Info(c.Context(), "user_list success", slog.Int64("filtered", reply.Filtered))
 	return reply, nil
 }

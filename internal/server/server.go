@@ -1,27 +1,22 @@
 package server
 
 import (
-	"goapi/conf"
-	"log"
 	"net/http"
 	"time"
+
+	"goapi/conf"
 
 	"github.com/gin-gonic/gin"
 )
 
-func Start(cfg *conf.ServerConfig, errors chan<- error) {
+// New 构造 *http.Server，由 main 负责生命周期管理（ListenAndServe + Shutdown）。
+func New(cfg *conf.ServerConfig) *http.Server {
 	app := gin.New()
-	srv := &http.Server{
+	return &http.Server{
 		Addr:           cfg.Addr,
 		Handler:        router(app),
 		ReadTimeout:    time.Duration(cfg.ReadTimeout) * time.Second,
 		WriteTimeout:   time.Duration(cfg.WriteTimeout) * time.Second,
 		MaxHeaderBytes: cfg.MaxHeaderBytes,
 	}
-	go func() {
-		log.Printf("start server http://%s", srv.Addr)
-		if err := srv.ListenAndServe(); err != nil {
-			errors <- err
-		}
-	}()
 }

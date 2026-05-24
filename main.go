@@ -1,72 +1,95 @@
 package main
 
 import (
-	_ "embed"
-	"fmt"
+	"context"
+	"errors"
+	"log"
+	"log/slog"
+	"net/http"
+	"os/signal"
+	"syscall"
+	"time"
+
 	"goapi/common/handle"
 	"goapi/common/logger"
 	"goapi/conf"
 	"goapi/internal/model"
+	"goapi/internal/scheduler"
 	"goapi/internal/server"
-	"goapi/internal/worker"
 	"goapi/pkg"
-	"log"
-	"os"
-	"os/signal"
-	"syscall"
 
 	"github.com/gin-gonic/gin"
-	"go.uber.org/zap/zapcore"
 )
 
 func main() {
-
-	err := conf.Load()
-	if err != nil {
-		panic(fmt.Errorf("load config error: %s", err.Error()))
+	if err := conf.Load(); err != nil {
+		log.Fatalf("load config: %v", err)
 	}
-
 	cfg := conf.Get()
-	log.Printf("start app %s, current version is %s", cfg.AppName, cfg.AppVersion)
 
-	if err = logger.Setup(cfg.Logger); err != nil {
-		panic(fmt.Errorf("setup logger error: %s", err.Error()))
+	if err := logger.Setup(cfg.Logger); err != nil {
+		log.Fatalf("setup logger: %v", err)
 	}
 
-	if logger.Logger().Level() == zapcore.DebugLevel {
-		// todo redoc openapi
-	} else {
+	bootCtx := context.Background()
+	logger.Info(bootCtx, "starting app",
+		slog.String("name", cfg.AppName),
+		slog.String("version", cfg.AppVersion),
+	)
+
+	if logger.Level() > slog.LevelDebug {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
-	handle.Db, err = pkg.NewDBClient(cfg.Database, logger.DbLogger())
+	db, err := pkg.NewDBClient(cfg.Database, logger.DbLogger())
 	if err != nil {
-		panic(fmt.Errorf("setup db error: %s", err.Error()))
+		log.Fatalf("setup db: %v", err)
 	}
-
-	handle.Db.AutoMigrate(&model.User{})
-
+	handle.Db = db
+	if err := handle.Db.AutoMigrate(&model.User{}); err != nil {
+		log.Fatalf("auto migrate: %v", err)
+	}
 	handle.Redis = pkg.NewRedisClient(cfg.Redis)
 
-	errors := make(chan error, 1)
+	ctx, stop := signal.NotifyContext(context.Background(),
+		syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	defer stop()
 
-	worker.Start(cfg.Workers, errors)
-	server.Start(cfg.Server, errors)
-
-	runloop(errors)
-}
-
-func runloop(errors <-chan error) {
-	notify := make(chan os.Signal, 1)
-	signal.Notify(notify, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT)
-	select {
-	case err := <-errors:
-		log.Printf("runloop service error: %s", err.Error())
-		break
-	case s := <-notify:
-		switch s {
-		case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT:
-			break
-		}
+	sch, err := scheduler.New(ctx, cfg.Scheduler)
+	if err != nil {
+		log.Fatalf("init scheduler: %v", err)
 	}
+	sch.Start()
+
+	srv := server.New(cfg.Server)
+	serverErr := make(chan error, 1)
+	go func() {
+		logger.Info(bootCtx, "http listening", slog.String("addr", cfg.Server.Addr))
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			serverErr <- err
+		}
+	}()
+
+	select {
+	case err := <-serverErr:
+		logger.Error(bootCtx, "server error", slog.Any("error", err))
+	case <-ctx.Done():
+		logger.Info(bootCtx, "shutdown signal received")
+	}
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(),
+		time.Duration(cfg.Server.ShutdownTimeout)*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		logger.Error(shutdownCtx, "http shutdown failed", slog.Any("error", err))
+	}
+	if err := sch.Shutdown(); err != nil {
+		logger.Error(shutdownCtx, "scheduler shutdown failed", slog.Any("error", err))
+	}
+	if sqlDB, err := handle.Db.DB(); err == nil {
+		_ = sqlDB.Close()
+	}
+	_ = handle.Redis.Close()
+	logger.Info(bootCtx, "shutdown complete")
 }

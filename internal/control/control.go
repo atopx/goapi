@@ -2,12 +2,13 @@ package control
 
 import (
 	"errors"
-	"goapi/common/logger"
-	"goapi/common/system"
+	"log/slog"
 	"net/http"
 
+	"goapi/common/logger"
+	"goapi/common/system"
+
 	"github.com/gin-gonic/gin"
-	"go.uber.org/zap"
 )
 
 type Controller struct {
@@ -18,7 +19,6 @@ type Controller struct {
 
 func New(ctx *gin.Context, params any) *Controller {
 	err := ctx.ShouldBind(params)
-
 	return &Controller{
 		context: ctx,
 		Params:  params,
@@ -49,13 +49,14 @@ func Scheduler(ctl Handler) {
 	resp := system.GetResponse(ctx)
 
 	if err := ctl.Error(); err != nil {
-		logger.Warn(ctx, "bind params error", zap.Error(err))
+		logger.Warn(ctx, "bind params error", slog.Any("error", err))
 		resp.Code = system.ClientError
 		resp.Message = err.Error()
-	} else if resp.Data, err = ctl.Deal(); err != nil {
+	} else if data, err := ctl.Deal(); err != nil {
 		resp.Code = system.ServerError
 		resp.Message = err.Error()
 	} else {
+		resp.Data = data
 		resp.Message = "OK"
 	}
 

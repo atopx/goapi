@@ -2,47 +2,27 @@ package logger
 
 import (
 	"context"
-	"goapi/conf"
+	"fmt"
 	"io"
+	"log/slog"
+	"os"
+
+	"goapi/conf"
 
 	"gopkg.in/natefinch/lumberjack.v2"
-
-	"github.com/atopx/clever"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
-var handler *handle
+const TraceKey = "trace_id"
 
-type handle struct {
-	logger   *zap.Logger
-	traceKey string
-}
-
-func TraceKey() string {
-	return handler.traceKey
-}
-
-func (h *handle) trace(ctx context.Context) *zapcore.Field {
-	if value := ctx.Value(h.traceKey); value != nil {
-		if traceId, ok := value.(string); ok {
-			field := zap.String(h.traceKey, traceId)
-			return &field
-		}
-	}
-	return nil
-}
-
-func (h *handle) output(ctx context.Context, level zapcore.Level, message string, fields ...zapcore.Field) {
-	if entity := handler.logger.Check(level, message); entity != nil {
-		if trace := h.trace(ctx); trace != nil {
-			fields = append(fields, *trace)
-		}
-		entity.Write(fields...)
-	}
-}
+var (
+	defaultLogger *slog.Logger
+	currentLevel  = new(slog.LevelVar)
+)
 
 func writer(cfg *conf.LoggerConfig) io.Writer {
+	if cfg.Filepath == "" {
+		return os.Stdout
+	}
 	return &lumberjack.Logger{
 		Filename:   cfg.Filepath,
 		MaxSize:    cfg.Maxsize,
@@ -52,60 +32,74 @@ func writer(cfg *conf.LoggerConfig) io.Writer {
 	}
 }
 
+func parseLevel(s string) (slog.Level, error) {
+	var lvl slog.Level
+	if err := lvl.UnmarshalText([]byte(s)); err != nil {
+		return lvl, fmt.Errorf("parse log level %q: %w", s, err)
+	}
+	return lvl, nil
+}
+
 func Setup(cfg *conf.LoggerConfig) error {
-	var loggerLevel = new(zapcore.Level)
-	if err := loggerLevel.UnmarshalText(clever.Bytes(cfg.Level)); err != nil {
+	lvl, err := parseLevel(cfg.Level)
+	if err != nil {
 		return err
 	}
+	currentLevel.Set(lvl)
 
-	core := zapcore.NewCore(zapcore.NewJSONEncoder(zapcore.EncoderConfig{
-		TimeKey:        "time",
-		LevelKey:       "level",
-		NameKey:        "logger",
-		CallerKey:      "caller",
-		MessageKey:     "message",
-		StacktraceKey:  "stacktrace",
-		LineEnding:     zapcore.DefaultLineEnding,
-		EncodeLevel:    zapcore.CapitalLevelEncoder,
-		EncodeTime:     zapcore.TimeEncoderOfLayout("2006-01-02 15:04:05.000"),
-		EncodeDuration: zapcore.SecondsDurationEncoder,
-		EncodeCaller:   zapcore.FullCallerEncoder,
-	}), zapcore.AddSync(writer(cfg)), loggerLevel)
-	handler = &handle{
-		traceKey: cfg.Trace,
-		logger:   zap.New(core, zap.AddCaller(), zap.AddCallerSkip(2)),
-	}
+	handler := slog.NewJSONHandler(writer(cfg), &slog.HandlerOptions{
+		Level:     currentLevel,
+		AddSource: cfg.AddSource,
+	})
+	defaultLogger = slog.New(handler)
+	slog.SetDefault(defaultLogger)
 	return nil
 }
 
-func Logger() *zap.Logger {
-	return handler.logger
+// Default 返回包级 slog.Logger，供少数需要直接传递 logger 的场景使用。
+func Default() *slog.Logger {
+	if defaultLogger == nil {
+		return slog.Default()
+	}
+	return defaultLogger
 }
 
-func Print(message string, fields ...zapcore.Field) {
-	handler.logger.Info(message, fields...)
+// Level 返回当前生效的日志等级。
+func Level() slog.Level {
+	return currentLevel.Level()
 }
 
-func Debug(ctx context.Context, message string, fields ...zapcore.Field) {
-	handler.output(ctx, zap.DebugLevel, message, fields...)
+func log(ctx context.Context, lvl slog.Level, msg string, attrs ...slog.Attr) {
+	l := Default()
+	if !l.Enabled(ctx, lvl) {
+		return
+	}
+	if ctx != nil {
+		if v, ok := ctx.Value(TraceKey).(string); ok && v != "" {
+			attrs = append(attrs, slog.String(TraceKey, v))
+		}
+	}
+	l.LogAttrs(ctx, lvl, msg, attrs...)
 }
 
-func Info(ctx context.Context, message string, fields ...zapcore.Field) {
-	handler.output(ctx, zap.InfoLevel, message, fields...)
+func Debug(ctx context.Context, msg string, attrs ...slog.Attr) {
+	log(ctx, slog.LevelDebug, msg, attrs...)
 }
 
-func Warn(ctx context.Context, message string, fields ...zapcore.Field) {
-	handler.output(ctx, zap.WarnLevel, message, fields...)
+func Info(ctx context.Context, msg string, attrs ...slog.Attr) {
+	log(ctx, slog.LevelInfo, msg, attrs...)
 }
 
-func Error(ctx context.Context, message string, fields ...zapcore.Field) {
-	handler.output(ctx, zap.ErrorLevel, message, fields...)
+func Warn(ctx context.Context, msg string, attrs ...slog.Attr) {
+	log(ctx, slog.LevelWarn, msg, attrs...)
 }
 
-func Fatal(ctx context.Context, message string, fields ...zapcore.Field) {
-	handler.output(ctx, zap.FatalLevel, message, fields...)
+func Error(ctx context.Context, msg string, attrs ...slog.Attr) {
+	log(ctx, slog.LevelError, msg, attrs...)
 }
 
-func Panic(ctx context.Context, message string, fields ...zapcore.Field) {
-	handler.output(ctx, zap.PanicLevel, message, fields...)
+// Fatal 记录 Error 等级日志后退出进程，仅供初始化阶段使用。
+func Fatal(ctx context.Context, msg string, attrs ...slog.Attr) {
+	log(ctx, slog.LevelError, msg, attrs...)
+	os.Exit(1)
 }

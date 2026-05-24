@@ -1,21 +1,21 @@
-FROM golang:1.22-alpine AS builder
+FROM golang:1.26-alpine AS builder
 
 RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apk/repositories
 RUN apk add --no-cache build-base
-COPY . /app
-RUN ls /app
+
 WORKDIR /app
+COPY go.mod go.sum ./
+RUN go env -w GOPROXY=https://goproxy.cn,direct && go mod download
+COPY . .
 
-ENV GOPROXY https://goproxy.cn,direct
-RUN GOOS=linux CGO_ENABLED=1 GOARCH=amd64 go build -o /go/bin/app_release
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /go/bin/app .
 
 
-FROM alpine
+FROM alpine:1.22
 
-RUN mkdir -p /opt/conf
-COPY --from=builder /go/bin/app_release /opt/app
+RUN mkdir -p /opt/conf /opt/logs
+COPY --from=builder /go/bin/app /opt/app
 
-COPY ./conf/config.yaml /opt/conf/config.yaml
 WORKDIR /opt
-
+EXPOSE 8080
 CMD ["/opt/app"]
