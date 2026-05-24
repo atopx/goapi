@@ -3,13 +3,10 @@ package logger
 import (
 	"context"
 	"fmt"
-	"io"
 	"log/slog"
 	"os"
 
 	"goapi/conf"
-
-	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 const TraceKey = "trace_id"
@@ -18,19 +15,6 @@ var (
 	defaultLogger *slog.Logger
 	currentLevel  = new(slog.LevelVar)
 )
-
-func writer(cfg *conf.LoggerConfig) io.Writer {
-	if cfg.Filepath == "" {
-		return os.Stdout
-	}
-	return &lumberjack.Logger{
-		Filename:   cfg.Filepath,
-		MaxSize:    cfg.Maxsize,
-		MaxAge:     cfg.Maxage,
-		MaxBackups: cfg.Backups,
-		LocalTime:  true,
-	}
-}
 
 func parseLevel(s string) (slog.Level, error) {
 	var lvl slog.Level
@@ -47,11 +31,7 @@ func Setup(cfg *conf.LoggerConfig) error {
 	}
 	currentLevel.Set(lvl)
 
-	handler := slog.NewJSONHandler(writer(cfg), &slog.HandlerOptions{
-		Level:     currentLevel,
-		AddSource: cfg.AddSource,
-	})
-	defaultLogger = slog.New(handler)
+	defaultLogger = slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
 	slog.SetDefault(defaultLogger)
 	return nil
 }

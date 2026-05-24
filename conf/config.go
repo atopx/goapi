@@ -1,7 +1,6 @@
 package conf
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -10,13 +9,10 @@ import (
 )
 
 type Config struct {
-	AppName    string          `toml:"app_name"`
-	AppVersion string          `toml:"app_version"`
-	Server     *ServerConfig   `toml:"server"`
-	Logger     *LoggerConfig   `toml:"logger"`
-	Database   *DatabaseConfig `toml:"database"`
-	Redis      *RedisConfig    `toml:"redis"`
-	Scheduler  []WorkerConfig  `toml:"scheduler"`
+	AppName    string        `toml:"app_name"`
+	AppVersion string        `toml:"app_version"`
+	Server     *ServerConfig `toml:"server"`
+	Logger     *LoggerConfig `toml:"logger"`
 }
 
 type ServerConfig struct {
@@ -28,41 +24,7 @@ type ServerConfig struct {
 }
 
 type LoggerConfig struct {
-	Level     string `toml:"level"`
-	Filepath  string `toml:"filepath"`
-	Maxage    int    `toml:"maxage"`
-	Maxsize   int    `toml:"maxsize"`
-	Backups   int    `toml:"backups"`
-	AddSource bool   `toml:"add_source"`
-}
-
-type WorkerConfig struct {
-	Name    string         `toml:"name"`
-	Spec    string         `toml:"spec"`
-	Disable bool           `toml:"disable"`
-	Args    map[string]any `toml:"args,omitempty"`
-}
-
-type DatabaseConfig struct {
-	Host        string `toml:"host"`
-	Port        int    `toml:"port"`
-	Name        string `toml:"name"`
-	User        string `toml:"user"`
-	Password    string `toml:"password"`
-	SSLMode     string `toml:"ssl_mode"`
-	MaxIdleConn int    `toml:"max_idle_conn"`
-	MaxOpenConn int    `toml:"max_open_conn"`
-	MaxIdleTime int64  `toml:"max_idle_time"`
-	MaxLifeTime int64  `toml:"max_life_time"`
-}
-
-type RedisConfig struct {
-	Host        string `toml:"host"`
-	Port        int    `toml:"port"`
-	Password    string `toml:"password"`
-	DB          int    `toml:"db"`
-	PoolSize    int    `toml:"pool_size"`
-	MaxLifeTime int64  `toml:"max_life_time"`
+	Level string `toml:"level"`
 }
 
 var config *Config
@@ -91,15 +53,6 @@ func load(path string) error {
 	cfg := new(Config)
 	if err := toml.Unmarshal(data, cfg); err != nil {
 		return fmt.Errorf("parse toml %s: %w", path, err)
-	}
-	if cfg.Database == nil {
-		return errors.New("config.database missing")
-	}
-	if cfg.Database.SSLMode == "" {
-		cfg.Database.SSLMode = "disable"
-	}
-	if cfg.Server != nil && cfg.Server.ShutdownTimeout <= 0 {
-		cfg.Server.ShutdownTimeout = 10
 	}
 	config = cfg
 	return nil
