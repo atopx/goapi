@@ -4,9 +4,9 @@ import (
 	"log/slog"
 	"time"
 
-	"goapi/common/logger"
-	"goapi/common/system"
-	"goapi/common/utils"
+	"goapi/internal/common/logger"
+	"goapi/internal/common/system"
+	"goapi/internal/common/utils"
 
 	"github.com/gin-gonic/gin"
 )
@@ -35,12 +35,12 @@ func ContextMiddleware() gin.HandlerFunc {
 		elapsed := slog.String("elapsed", time.Since(beginTime).String())
 
 		switch {
-		case resp.Code < system.ClientError:
-			logger.Info(ctx, "response", elapsed)
-		case resp.Code >= system.ServerError:
+		case resp.IsServerError():
 			logger.Error(ctx, "response", elapsed, slog.String("system_error", resp.Message))
-		default:
+		case resp.IsClientError():
 			logger.Warn(ctx, "response", elapsed, slog.String("client_error", resp.Message))
+		default:
+			logger.Info(ctx, "response", elapsed)
 		}
 	}
 }

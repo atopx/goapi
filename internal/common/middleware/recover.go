@@ -1,16 +1,15 @@
 package middleware
 
 import (
+	"errors"
 	"log/slog"
-	"net"
 	"net/http"
 	"net/http/httputil"
-	"os"
 	"runtime/debug"
-	"strings"
+	"syscall"
 
-	"goapi/common/logger"
-	"goapi/common/system"
+	"goapi/internal/common/logger"
+	"goapi/internal/common/system"
 
 	"github.com/gin-gonic/gin"
 )
@@ -46,23 +45,18 @@ func RecoverMiddleware() gin.HandlerFunc {
 			if resp == nil {
 				resp = system.NewResponse(ctx)
 			}
-			resp.Code = system.ServerError
-			resp.Message = "Internal Server Error"
-			ctx.AbortWithStatusJSON(http.StatusInternalServerError, resp)
+			resp.Fail(system.ServerError, "Internal Server Error")
+			// 与 Scheduler 保持一致：业务/系统错误统一返回 HTTP 200，错误语义由 resp.Code 承载。
+			ctx.AbortWithStatusJSON(http.StatusOK, resp)
 		}()
 		ctx.Next()
 	}
 }
 
 func isBrokenPipe(rec any) bool {
-	ne, ok := rec.(*net.OpError)
+	err, ok := rec.(error)
 	if !ok {
 		return false
 	}
-	se, ok := ne.Err.(*os.SyscallError)
-	if !ok {
-		return false
-	}
-	msg := strings.ToLower(se.Error())
-	return strings.Contains(msg, "broken pipe") || strings.Contains(msg, "connection reset by peer")
+	return errors.Is(err, syscall.EPIPE) || errors.Is(err, syscall.ECONNRESET)
 }

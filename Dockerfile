@@ -13,7 +13,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /go/bin/app 
 
 FROM alpine:1.22
 
-RUN mkdir -p /opt/conf /opt/logs
+RUN mkdir -p /opt/conf
 COPY --from=builder /go/bin/app /opt/app
 
 WORKDIR /opt

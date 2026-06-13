@@ -1,8 +1,8 @@
 package server
 
 import (
-	"goapi/common/middleware"
 	"goapi/internal/api"
+	"goapi/internal/common/middleware"
 
 	"github.com/gin-gonic/gin"
 )

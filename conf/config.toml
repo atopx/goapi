@@ -1,5 +1,7 @@
 app_name = "goapi"
 app_version = "v0.2.0"
+# gin 运行模式: debug/release/test，留空默认 release
+mode = "debug"
 
 [server]
 addr = "127.0.0.1:8080"
@@ -9,7 +11,7 @@ write_timeout = 60
 # 单位: 字节
 max_header_bytes = 1048576
 # 优雅停机最长等待时间，单位: 秒
-shutdown_timeout = 10
+shutdown_timeout = 30
 
 [logger]
 # debug/info/warn/error

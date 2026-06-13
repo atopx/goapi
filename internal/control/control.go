@@ -1,41 +1,37 @@
 package control
 
 import (
-	"errors"
 	"log/slog"
 	"net/http"
 
-	"goapi/common/logger"
-	"goapi/common/system"
+	"goapi/internal/common/logger"
+	"goapi/internal/common/system"
 
 	"github.com/gin-gonic/gin"
 )
 
-type Controller struct {
+type Controller[P any] struct {
 	context *gin.Context
-	Params  any
+	Params  *P
 	err     error
 }
 
-func New(ctx *gin.Context, params any) *Controller {
+func New[P any](ctx *gin.Context) *Controller[P] {
+	params := new(P)
 	err := ctx.ShouldBind(params)
-	return &Controller{
+	return &Controller[P]{
 		context: ctx,
 		Params:  params,
 		err:     err,
 	}
 }
 
-func (ctl *Controller) Context() *gin.Context {
+func (ctl *Controller[P]) Context() *gin.Context {
 	return ctl.context
 }
 
-func (ctl *Controller) Error() error {
+func (ctl *Controller[P]) Error() error {
 	return ctl.err
-}
-
-func (ctl *Controller) Deal() (any, error) {
-	return nil, errors.New("unimplemented")
 }
 
 type Handler interface {
@@ -50,14 +46,11 @@ func Scheduler(ctl Handler) {
 
 	if err := ctl.Error(); err != nil {
 		logger.Warn(ctx, "bind params error", slog.Any("error", err))
-		resp.Code = system.ClientError
-		resp.Message = err.Error()
+		resp.Fail(system.ClientError, err.Error())
 	} else if data, err := ctl.Deal(); err != nil {
-		resp.Code = system.ServerError
-		resp.Message = err.Error()
+		resp.Fail(system.ServerError, err.Error())
 	} else {
-		resp.Data = data
-		resp.Message = "OK"
+		resp.Success(data)
 	}
 
 	ctx.JSON(http.StatusOK, resp)

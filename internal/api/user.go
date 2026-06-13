@@ -1,7 +1,7 @@
 package api
 
 import (
-	user_list "goapi/internal/biz/user/list"
+	userlist "goapi/internal/biz/user/list"
 	"goapi/internal/control"
 
 	"github.com/gin-gonic/gin"
@@ -18,5 +18,5 @@ import (
 // @Router /api/v1/user/list [post]
 func UserList(ctx *gin.Context) {
 
-	control.Scheduler(user_list.NewController(ctx))
+	control.Scheduler(userlist.NewController(ctx))
 }

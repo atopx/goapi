@@ -1,18 +1,18 @@
-package user_list
+package userlist
 
 import (
-	"goapi/common/utils"
+	"goapi/internal/common/utils"
 	"goapi/internal/control"
 
 	"github.com/gin-gonic/gin"
 )
 
 type Controller struct {
-	*control.Controller
+	*control.Controller[Params]
 }
 
 func NewController(ctx *gin.Context) *Controller {
-	return &Controller{control.New(ctx, new(Params))}
+	return &Controller{control.New[Params](ctx)}
 }
 
 type Params struct {

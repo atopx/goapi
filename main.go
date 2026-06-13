@@ -6,13 +6,14 @@ import (
 	"log"
 	"log/slog"
 	"net/http"
+	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
-	"goapi/common/handle"
-	"goapi/common/logger"
 	"goapi/conf"
+	"goapi/internal/common/handle"
+	"goapi/internal/common/logger"
 	"goapi/internal/model"
 	"goapi/internal/scheduler"
 	"goapi/internal/server"
@@ -37,7 +38,10 @@ func main() {
 		slog.String("version", cfg.AppVersion),
 	)
 
-	if logger.Level() > slog.LevelDebug {
+	switch cfg.Mode {
+	case gin.DebugMode, gin.TestMode, gin.ReleaseMode:
+		gin.SetMode(cfg.Mode)
+	default:
 		gin.SetMode(gin.ReleaseMode)
 	}
 
@@ -73,6 +77,7 @@ func main() {
 	select {
 	case err := <-serverErr:
 		logger.Error(bootCtx, "server error", slog.Any("error", err))
+		os.Exit(1)
 	case <-ctx.Done():
 		logger.Info(bootCtx, "shutdown signal received")
 	}

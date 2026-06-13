@@ -12,6 +12,7 @@ import (
 type Config struct {
 	AppName    string          `toml:"app_name"`
 	AppVersion string          `toml:"app_version"`
+	Mode       string          `toml:"mode"`
 	Server     *ServerConfig   `toml:"server"`
 	Logger     *LoggerConfig   `toml:"logger"`
 	Database   *DatabaseConfig `toml:"database"`

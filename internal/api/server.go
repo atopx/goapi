@@ -1,8 +1,8 @@
 package api
 
 import (
-	"goapi/common/system"
 	"goapi/conf"
+	"goapi/internal/common/system"
 	"net/http"
 
 	"github.com/gin-gonic/gin"

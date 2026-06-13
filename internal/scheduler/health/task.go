@@ -6,8 +6,8 @@ import (
 	"log/slog"
 	"net/http"
 
-	"goapi/common/logger"
 	"goapi/conf"
+	"goapi/internal/common/logger"
 	"goapi/internal/scheduler/task"
 )
 

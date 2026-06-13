@@ -5,8 +5,8 @@ import (
 	"log/slog"
 	"time"
 
-	"goapi/common/logger"
-	"goapi/common/utils"
+	"goapi/internal/common/logger"
+	"goapi/internal/common/utils"
 )
 
 // Task 是所有调度任务必须实现的接口。

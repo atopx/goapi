@@ -25,3 +25,4 @@ logs/*
 *_v?.?.?
 
 conf/config.yaml
+.codegraph
